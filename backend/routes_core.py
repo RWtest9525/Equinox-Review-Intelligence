@@ -41,6 +41,20 @@ async def get_application(app_id: str, user: dict = Depends(get_current_user)):
     return {"application": app, "brand_voice": bv, "integrations": integrations}
 
 
+@router.delete("/applications/{app_id}")
+async def delete_application(app_id: str, user: dict = Depends(require_role("super_admin", "client_admin"))):
+    app = await assert_app_access(user, app_id)
+    await db.reviews.delete_many({"application_id": app_id})
+    await db.rating_snapshots.delete_many({"application_id": app_id})
+    await db.sync_jobs.delete_many({"application_id": app_id})
+    await db.competitors.delete_many({"application_id": app_id})
+    await db.brand_voice_settings.delete_many({"application_id": app_id})
+    await db.application_integrations.delete_many({"application_id": app_id})
+    await db.applications.delete_one({"id": app_id})
+    await log_audit(user, "application.deleted", "application", app_id, {"name": app.get("name")})
+    return {"ok": True, "deleted": app_id}
+
+
 # -------- Clients / Organizations (super admin) --------
 @router.get("/clients")
 async def list_clients(user: dict = Depends(require_role("super_admin"))):

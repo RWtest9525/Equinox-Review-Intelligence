@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import { PLATFORM_LABEL, timeAgo } from "@/lib/format";
 import { toast } from "sonner";
+import GooglePlaySync from "@/components/integrations/GooglePlaySync";
 
 export default function Integrations() {
   const { applications } = useScope();
@@ -27,6 +28,22 @@ export default function Integrations() {
     <div>
       <DemoBanner />
       <PageHeader title="Integrations" subtitle="Connect Google Play & App Store data sources" />
+
+      <Panel className="mb-5 p-5 relative overflow-hidden" data-testid="gplay-live-card">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(16,185,129,0.10),transparent_55%)]" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/15"><CheckCircle2 size={16} className="text-emerald-400" /></span>
+              <div>
+                <div className="font-display font-semibold text-zinc-100">Google Play — Live Reviews</div>
+                <div className="text-xs text-zinc-400">Fetch real reviews & ratings by app URL or name, filtered by date. No API key required.</div>
+              </div>
+            </div>
+          </div>
+          <GooglePlaySync />
+        </div>
+      </Panel>
       <StatePanel loading={q.isLoading} error={q.isError && "Failed to load"} onRetry={q.refetch} empty={!q.isLoading && integ.length === 0}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {integ.map((it) => (

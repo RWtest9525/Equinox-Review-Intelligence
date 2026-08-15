@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from deps import db, new_id, hash_password, verify_password, now_iso
-import routes_auth, routes_core, routes_reviews, routes_analytics, routes_ai, routes_competitors
+import routes_auth, routes_core, routes_reviews, routes_analytics, routes_ai, routes_competitors, routes_gplay
 from seed_data import seed_demo
 
 logging.basicConfig(level=logging.INFO,
@@ -25,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for mod in (routes_auth, routes_core, routes_reviews, routes_analytics, routes_ai, routes_competitors):
+for mod in (routes_auth, routes_core, routes_reviews, routes_analytics, routes_ai, routes_competitors, routes_gplay):
     app.include_router(mod.router)
 
 

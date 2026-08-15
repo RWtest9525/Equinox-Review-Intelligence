@@ -1,0 +1,55 @@
+{
+  "summary": "Verified LIVE Google Play review fetching (google-play-scraper, no API key). Backend: 8/8 new gplay tests pass; full regression 42/42 pytest (34 previous + 8 new). Frontend: full E2E — login as super_admin -> Integrations -> gplay-live-card visible -> gplay-sync-btn opens gplay-dialog -> typed 'spotify' in gplay-query -> gplay-resolve returned 5 real matches (Spotify: Music & Podcasts, Spotify for Artists, Spotify Kids, etc.) with live icons/scores -> selected top match, set gplay-max=30, clicked gplay-run-sync -> gplay-result appeared: 'Spotify: Music & Podcasts — imported 30 new reviews of 30 fetched.' -> after close, the newly created app appears in app-selector. Loaded skills: ai-testing-core.",
+  "ai_feature_verdicts": [
+    "gplay resolve (name) - pass - evidence: POST /api/gplay/resolve {query:'spotify'} -> 200; matches[] len>=5; includes app_id containing 'spotify', has title/score/icon keys. Command: pytest tests/test_gplay_live.py::TestGplayResolve::test_resolve_by_name.",
+    "gplay resolve (URL) - pass - evidence: POST /api/gplay/resolve {query:'https://play.google.com/store/apps/details?id=com.spotify.music'} -> 200; matches len=1; matches[0].app_id=='com.spotify.music'.",
+    "gplay sync (admin, real reviews) - pass - evidence: POST /api/gplay/sync {package_id:'com.spotify.music', since_date:'2026-01-01', max_count:40} -> 200; fetched=40 (real live from Play); application created (id=60aed290..., name='Spotify: Music and Podcasts'); imported reviews persisted with source='google_play_live', platform='google_play', sentiment/topic assigned (verified via GET /api/reviews?application_id=<id>).",
+    "gplay sync dedupe - pass - evidence: 2nd identical POST /api/gplay/sync returned imported=0 skipped_duplicates=40 fetched=40.",
+    "gplay since_date filter - pass - evidence: since_date=2099-12-31 -> fetched=0; since_date=2020-01-01 -> fetched=20. Filter effectively excludes reviews older than cutoff.",
+    "gplay RBAC (client_member) - pass - evidence: client_member (member@zenpay.com) POST /api/gplay/sync -> 403 (require_role admin); POST /api/gplay/resolve -> 200 (open to any user).",
+    "Frontend E2E gplay - pass - evidence: Playwright drove admin login -> nav-integrations -> gplay-live-card+gplay-sync-btn present -> gplay-dialog opened -> gplay-query='spotify' -> gplay-resolve populated gplay-matches (5) -> selected -> gplay-max=30 -> gplay-run-sync -> gplay-result text 'imported 30 new reviews of 30 fetched' -> app-selector now lists 'Spotify: Music & Podcasts'."
+  ],
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/applications/{id}", "issue": "No delete endpoint exists (405 Method Not Allowed). Testing agents and admins cannot clean up apps created by live-sync — synced test apps (e.g. 'Spotify: Music & Podcasts') now pollute super_admin's applications list. Consider adding an admin-only DELETE endpoint."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "GooglePlaySync dialog", "issues": ["Radix DialogContent console warning: 'Missing Description or aria-describedby={undefined} for {DialogContent}'. Same a11y warning family as iter_1's ReviewDialog. Add DialogDescription or aria-describedby. Non-blocking."]},
+      {"screen": "Integrations header", "issues": ["The GooglePlaySync trigger renders twice on the page (once inside PageHeader actions, once inside the gplay-live-card). Both share data-testid='gplay-sync-btn'. Not harmful but yields duplicate testids — Playwright must use .first. Consider giving the header CTA a distinct testid."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_gplay_live.py",
+    "/app/backend/tests/test_equinox_backend.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/gplay_results.xml"
+  ],
+  "action_items": [
+    "(minor) Add DialogDescription/aria-describedby to GooglePlaySync's DialogContent to silence Radix a11y warning.",
+    "(minor) Give the header 'Live Sync (Google Play)' trigger a distinct data-testid (e.g. gplay-sync-btn-header) so testids remain unique.",
+    "(minor) Provide an admin-only DELETE /api/applications/{id} endpoint (with cascading delete of its reviews/snapshots/sync_jobs) so live-synced test apps can be cleaned. Current run left 'Spotify: Music and Podcasts' + 'Spotify: Music & Podcasts' in super_admin org."
+  ],
+  "critical_code_review_comments": [
+    "routes_gplay.sync: for non-super_admin, existing-app lookup filters by organization_id; for super_admin it uses global lookup {'package_id': package_id}. Under a super_admin two different client orgs could not each own the same package_id — the first hit (any org) is returned. Fine for now (super_admin is a single global operator), but worth documenting.",
+    "gplay.fetch_reviews: uses google_play_scraper's continuation_token loop with a max_count cap of 600. No retry/backoff on transient network errors — a single flaky HTTP causes 502. Consider a light retry (2-3x with backoff) inside fetch_reviews since it runs in a thread anyway.",
+    "gplay endpoint is fully synchronous (asyncio.to_thread). Fetching 200+ reviews over slow Play endpoints can exceed the ingress ~100s cutoff and produce user-visible 502 even though the DB inserts succeeded. Consider (a) reducing default max_count from 200 to 100, or (b) offloading to a background job + status endpoint.",
+    "routes_gplay: rating_snapshots upsert uses reviews=len(fetched) (all fetched, not net imported) — if a manager syncs twice a day the snapshot's 'reviews' counter double-counts duplicates. Consider len(to_insert) instead of len(fetched).",
+    "Frontend GooglePlaySync.jsx: 'max' input min=10 max=600 but backend has no upper enforcement beyond min(max_count or 200, 600) inside gplay.fetch_reviews. Good defense-in-depth; add server-side pydantic constraint (e.g. Field(le=600, ge=1)) for clarity.",
+    "Duplicate GooglePlaySync <Button/> rendered on Integrations page — two DOM nodes carry the same data-testid='gplay-sync-btn' (header actions + live card). Only visual issue but breaks testid uniqueness."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_gplay_live.py (new)"
+  ],
+  "success_rate": {"backend": "100% (42/42 pytest incl. 8 new gplay)", "frontend": "100% (full gplay E2E flow)"},
+  "test_credentials": "admin@equinox.ai / Equinox@2026 (super_admin), member@zenpay.com / Member@2026 (client_member) — both verified working.",
+  "seed_data_creation": "During test runs the super_admin org received live-synced Spotify apps ('Spotify: Music and Podcasts' from backend tests, 'Spotify: Music & Podcasts' from frontend E2E) plus ~60 real reviews. Unable to auto-clean because no DELETE /api/applications endpoint exists. Main agent may wipe via mongo shell if desired.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New gplay tests live at /app/backend/tests/test_gplay_live.py — depend on outbound internet + google_play_scraper. All 8 tests run in ~3s (Google Play endpoints are quick). Frontend testids for gplay flow: nav-integrations, gplay-live-card, gplay-sync-btn (duplicated on page — use .first), gplay-dialog, gplay-query, gplay-resolve, gplay-country, gplay-since, gplay-max, gplay-matches, gplay-match-<appid>, gplay-run-sync, gplay-result. Sync endpoint is blocking — keep max_count<=40 to stay under ingress timeout when driving from Playwright.",
+  "rca of the issue": "n/a — feature works end-to-end; only minor UX/a11y/cleanup follow-ups noted."
+}
