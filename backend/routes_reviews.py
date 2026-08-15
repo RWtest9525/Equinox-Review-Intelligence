@@ -100,6 +100,7 @@ async def export_reviews(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     search: Optional[str] = None,
+    format: str = "csv",
 ):
     q = dict(org_scope(user))
     if application_id:
@@ -120,13 +121,12 @@ async def export_reviews(
         ]
     rows = await db.reviews.find(q, {"_id": 0}).sort([("created_at", -1)]).to_list(20000)
 
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow(["Review ID", "Date (UTC)", "Rating", "Sentiment", "Topic", "Reviewer",
-                "Country", "App Version", "Language", "Review Text", "Reply Status",
-                "Published Reply", "Reply Date (UTC)", "Platform", "Source"])
-    for r in rows:
-        w.writerow([
+    HEADERS = ["Review ID", "Date (UTC)", "Rating", "Sentiment", "Topic", "Reviewer",
+               "Country", "App Version", "Language", "Review Text", "Reply Status",
+               "Published Reply", "Reply Date (UTC)", "Platform", "Source"]
+
+    def row_values(r):
+        return [
             r.get("external_id") or r.get("id"),
             (r.get("created_at") or "")[:19].replace("T", " "),
             r.get("rating"), r.get("sentiment"), r.get("topic"), r.get("reviewer_name"),
@@ -136,13 +136,53 @@ async def export_reviews(
             (r.get("published_reply") or "").replace("\n", " ").strip(),
             (r.get("reply_at") or "")[:19].replace("T", " "),
             r.get("platform"), r.get("source") or ("demo" if r.get("is_demo") else "live"),
-        ])
-    csv_bytes = buf.getvalue()
-    fname = f"reviews_export_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+        ]
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    truncated = "true" if len(rows) >= 20000 else "false"
+
+    if format == "xlsx":
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Live Reviews"
+        ws.append(HEADERS)
+        header_fill = PatternFill("solid", fgColor="0F172A")
+        header_font = Font(bold=True, color="FFFFFF")
+        for c in range(1, len(HEADERS) + 1):
+            cell = ws.cell(row=1, column=c)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(vertical="center")
+        for r in rows:
+            ws.append(row_values(r))
+        widths = [22, 20, 8, 11, 16, 20, 16, 14, 10, 60, 14, 50, 20, 14, 18]
+        for i, wdt in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = wdt
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(HEADERS))}{len(rows) + 1}"
+        bio = io.BytesIO()
+        wb.save(bio)
+        return Response(
+            content=bio.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="reviews_export_{stamp}.xlsx"',
+                     "X-Total-Rows": str(len(rows)), "X-Truncated": truncated},
+        )
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(HEADERS)
+    for r in rows:
+        w.writerow(row_values(r))
     return Response(
-        content=csv_bytes,
+        content=buf.getvalue(),
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{fname}"', "X-Total-Rows": str(len(rows))},
+        headers={"Content-Disposition": f'attachment; filename="reviews_export_{stamp}.csv"',
+                 "X-Total-Rows": str(len(rows)), "X-Truncated": truncated},
     )
 
 

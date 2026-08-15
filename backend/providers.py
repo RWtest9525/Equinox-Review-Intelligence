@@ -22,6 +22,11 @@ class ReviewDataProvider(ABC):
 
 
 class GooglePlayProvider(ReviewDataProvider):
+    """Official Google Play Developer API provider (credential-based, review replies).
+
+    Requires a service-account JSON with the Play Developer Reporting/Reviews scope.
+    When credentials are absent we fall back to the public live provider for reads.
+    """
     name = "google_play"
     is_live = False
 
@@ -30,8 +35,8 @@ class GooglePlayProvider(ReviewDataProvider):
 
     async def fetch_reviews(self, application: dict, since: str = None):
         raise NotConnectedError(
-            "Google Play connection not configured. Add Google Play Developer API "
-            "service-account credentials in Integrations to enable live sync."
+            "Google Play Developer API credentials not configured. Public live reads are "
+            "available via the Live Reviews sync; add a service account to enable reply publishing."
         )
 
     async def connection_status(self, application: dict) -> dict:
@@ -40,7 +45,32 @@ class GooglePlayProvider(ReviewDataProvider):
             "provider": "google_play",
             "connected": connected,
             "live": connected,
-            "message": None if connected else "Not connected. Add Google Play credentials.",
+            "message": None if connected else "Not connected. Add Google Play service-account credentials.",
+        }
+
+
+class GooglePlayLiveProvider(ReviewDataProvider):
+    """Public Google Play live reads (no API key). Read-only — used by Live Reviews sync.
+
+    Normalizes to the same review shape the official API path uses, so switching to
+    the credential-based provider requires no changes to the sync/dedupe pipeline.
+    """
+    name = "google_play_live"
+    is_live = True
+
+    async def fetch_reviews(self, application: dict, since: str = None, max_count: int = 200, country: str = "us"):
+        import gplay
+        pkg = application.get("package_id")
+        if not pkg:
+            raise NotConnectedError("Application has no Google Play package id.")
+        return gplay.fetch_reviews(pkg, since_date=since, max_count=max_count, country=country)
+
+    async def connection_status(self, application: dict) -> dict:
+        return {
+            "provider": "google_play_live",
+            "connected": True,
+            "live": True,
+            "message": "Live public reads active (read-only). Reply publishing needs the official Developer API.",
         }
 
 
@@ -91,7 +121,11 @@ class NotConnectedError(Exception):
 
 def get_provider(platform: str, credentials: dict = None) -> ReviewDataProvider:
     if platform == "google_play":
-        return GooglePlayProvider(credentials)
+        # Use official credential-based provider when creds exist (enables reply publishing);
+        # otherwise the public live provider handles read-only ingestion.
+        if credentials and credentials.get("service_account_json"):
+            return GooglePlayProvider(credentials)
+        return GooglePlayLiveProvider()
     if platform == "app_store":
         return AppleProvider(credentials)
     return MockProvider()

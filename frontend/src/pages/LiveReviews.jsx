@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Radio, Download, Star, ChevronLeft, ChevronRight, Info, Sparkles, RefreshCw, Play } from "lucide-react";
+import { Radio, Download, Star, ChevronLeft, ChevronRight, Info, Sparkles, RefreshCw, Play, ChevronDown, FileSpreadsheet, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import GooglePlaySync from "@/components/integrations/GooglePlaySync";
 import { timeAgo, fmtNum } from "@/lib/format";
 import { toast } from "sonner";
@@ -68,19 +69,20 @@ export default function LiveReviews() {
 
   const resetPage = (fn) => (v) => { fn(v); setPage(1); };
 
-  const exportSheet = async () => {
+  const exportSheet = async (fmt = "csv") => {
     if (!appId) return;
     setExporting(true);
     try {
-      const res = await api.get("/reviews/export", { params: baseParams(), responseType: "blob" });
-      const url = URL.createObjectURL(new Blob([res.data], { type: "text/csv" }));
+      const res = await api.get("/reviews/export", { params: { ...baseParams(), format: fmt }, responseType: "blob" });
+      const mime = fmt === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+      const url = URL.createObjectURL(new Blob([res.data], { type: mime }));
       const a = document.createElement("a");
       a.href = url;
       const label = `${currentApp?.name || "reviews"}${from ? `_${from}` : ""}${to ? `_to_${to}` : ""}${star !== "all" ? `_${star}star` : ""}`;
-      a.download = `${label.replace(/\s+/g, "_")}.csv`;
+      a.download = `${label.replace(/\s+/g, "_")}.${fmt}`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${res.headers["x-total-rows"] || total} reviews to sheet`);
+      toast.success(`Exported ${res.headers["x-total-rows"] || total} reviews to ${fmt === "xlsx" ? "Excel" : "CSV"} sheet`);
     } catch (e) { toast.error(apiErr(e)); } finally { setExporting(false); }
   };
 
@@ -132,9 +134,21 @@ export default function LiveReviews() {
               </div>
               <div className="md:col-span-3 flex gap-2">
                 <Button variant="ghost" size="sm" className="glass-btn h-9 text-zinc-300" onClick={() => { setFrom(""); setTo(""); setStar("all"); setPage(1); }} data-testid="live-reset"><RefreshCw size={13} className="mr-1.5" /> Reset</Button>
-                <Button className="glass-btn h-9 flex-1 text-emerald-300 bg-emerald-500/10 hover:text-emerald-200" onClick={exportSheet} disabled={exporting || !total} data-testid="live-export">
-                  <Download size={14} className="mr-1.5" /> {exporting ? "Exporting…" : "Export Sheet (CSV)"}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="glass-btn h-9 flex-1 text-emerald-300 bg-emerald-500/10 hover:text-emerald-200" disabled={exporting || !total} data-testid="live-export">
+                      <Download size={14} className="mr-1.5" /> {exporting ? "Exporting…" : "Download Sheet"} <ChevronDown size={13} className="ml-1.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => exportSheet("xlsx")} data-testid="live-export-xlsx">
+                      <FileSpreadsheet size={14} className="mr-2 text-emerald-400" /> Excel (.xlsx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportSheet("csv")} data-testid="live-export-csv">
+                      <FileText size={14} className="mr-2 text-blue-400" /> CSV (.csv)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <div className="mt-3">
@@ -208,7 +222,7 @@ export default function LiveReviews() {
               <li>• <b className="text-zinc-300">Sheet columns:</b> Review ID, Date (UTC), Rating, Sentiment, Topic, Reviewer, Country, App Version, Language, Review Text, Reply Status, Published Reply, Reply Date, Platform, Source.</li>
               <li>• <b className="text-zinc-300">Sentiment & Topic</b> are auto-classified (5–4★ positive, 3★ neutral, 2–1★ negative; topics via keyword matching). Ratings & text are exactly as posted on the store.</li>
               <li>• <b className="text-zinc-300">Coverage:</b> Google Play exposes the most-recent reviews per storefront — full historical archives aren't publicly available. Re-sync periodically to keep data current.</li>
-              <li>• The CSV opens directly in Excel or Google Sheets.</li>
+              <li>• Download as <b className="text-zinc-300">Excel (.xlsx)</b> — with a styled, filterable header row — or as <b className="text-zinc-300">CSV</b>. Both open directly in Excel or Google Sheets.</li>
             </ul>
           </div>
         </>
