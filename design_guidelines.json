@@ -1,0 +1,140 @@
+{
+  "project_name": "Equinox AI App Reputation Intelligence Platform",
+  "theme": "dark-first",
+  "typography": {
+    "headings": {
+      "font_family": "Manrope, sans-serif",
+      "styles": {
+        "h1": "text-4xl sm:text-5xl tracking-tight font-bold",
+        "h2": "text-2xl sm:text-3xl tracking-tight font-semibold",
+        "h3": "text-xl sm:text-2xl tracking-tight font-medium",
+        "h4": "text-lg sm:text-xl font-medium"
+      },
+      "instruction": "NEVER use Inter, Roboto, or Open Sans for headings. Use Manrope to give a premium, slightly technical but approachable feel. Always apply tracking-tight to headings."
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "styles": {
+        "base": "text-sm md:text-base leading-relaxed",
+        "small": "text-xs md:text-sm text-zinc-400"
+      },
+      "instruction": "Use Inter or IBM Plex Sans for body text to maintain maximum legibility in dense data views. Reduce font weight slightly on dark mode (use font-light or font-normal instead of medium for body)."
+    },
+    "labels": {
+      "styles": "text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold text-zinc-500",
+      "instruction": "Use for overlines, small column headers, and tiny badges."
+    }
+  },
+  "colors": {
+    "backgrounds": {
+      "page": "bg-[#0A0A0B]",
+      "surface_1": "bg-[#121214] or bg-zinc-900/50",
+      "surface_2": "bg-[#18181B] or bg-zinc-800/50",
+      "sidebar": "bg-[#0A0A0B] or bg-[#121214]"
+    },
+    "text": {
+      "primary": "text-zinc-50 or text-[#EDEDED]",
+      "secondary": "text-zinc-400 or text-[#A1A1AA]",
+      "muted": "text-zinc-500"
+    },
+    "accents": {
+      "electric_blue": "text-blue-500 bg-blue-500/10 border-blue-500/20",
+      "gold": "text-amber-400 bg-amber-400/10 border-amber-400/20",
+      "instruction": "Use electric blue as the primary interactive accent (buttons, active tabs, focus rings). Use gold strictly for AI-driven insights, premium features, and highlight metrics."
+    },
+    "status": {
+      "success": "text-emerald-400 bg-emerald-400/10",
+      "warning": "text-amber-400 bg-amber-400/10",
+      "error": "text-rose-400 bg-rose-400/10",
+      "info": "text-blue-400 bg-blue-400/10"
+    },
+    "borders": {
+      "default": "border-white/10 or border-zinc-800",
+      "hover": "border-white/20 or border-zinc-700"
+    },
+    "instruction": "Never use pure #000000 to prevent halation. Build hierarchy using background lightness shifts and 1px subtle borders instead of heavy shadows."
+  },
+  "visual_enhancers": {
+    "glassmorphism": {
+      "instruction": "Use SPARINGLY. Apply only to sticky headers, floating command menus, or critical modals.",
+      "classes": "backdrop-blur-xl bg-[#0A0A0B]/70 border-b border-white/10"
+    },
+    "shadows": {
+      "instruction": "Shadows are often invisible on dark surfaces. Use subtle inner shadows or glow effects for interactive states.",
+      "classes": "shadow-[0_0_15px_rgba(59,130,246,0.1)] for blue glow, or drop-shadow-md"
+    },
+    "gradients": {
+      "instruction": "Use subtle, low-opacity radial gradients behind key metrics or AI cards. Avoid harsh linear gradients.",
+      "classes": "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0A0A0B] to-[#0A0A0B]"
+    },
+    "borders_and_radius": {
+      "instruction": "Use sharp or slightly rounded corners for an enterprise feel. Avoid excessive rounding.",
+      "classes": "rounded-lg or rounded-md. Avoid rounded-2xl or higher unless it's a pill badge."
+    }
+  },
+  "layouts": {
+    "architecture": "Sidebar navigation (left) + Topbar (Global application selector) + Main Content Area. Ensure the sidebar is collapsible on smaller screens.",
+    "spacing": "Use dense spacing for data tables (p-2, p-3) and generous spacing (p-6, p-8) for dashboard summary cards.",
+    "grids": "High Density Grid (Bento Mode B). Use grid-cols-1 md:grid-cols-3 lg:grid-cols-4 for KPI cards. For complex views, use grid-cols-12 with varied spans to break monotony.",
+    "max_width": "Use 100% width for enterprise dashboards, maybe max-w-[1600px] if needed, to utilize screen real estate."
+  },
+  "components": {
+    "cards": {
+      "instruction": "Cardless or subtle borders. Use bg-[#121214] with border-white/5. On hover, translate-y-[-2px] and slightly lighten border."
+    },
+    "charts": {
+      "instruction": "Use Recharts. Ensure chart colors are desaturated to pass WCAG on dark backgrounds. Use blue, amber, emerald, rose. Do not invert light-mode palettes.",
+      "library": "recharts"
+    },
+    "tables": {
+      "instruction": "High density. Subtle border-b border-white/5 on rows. Sticky headers with backdrop-blur. Use right-alignment for numbers."
+    },
+    "buttons": {
+      "instruction": "Primary: Solid bg-blue-600 text-white hover:bg-blue-500. Secondary: bg-white/5 text-zinc-300 hover:bg-white/10. AI Action: bg-amber-500/10 text-amber-400 border border-amber-500/20."
+    },
+    "icons": {
+      "library": "lucide-react",
+      "instruction": "Use simple, recognizable icons. Stroke width 1.5 or 2."
+    }
+  },
+  "motion": {
+    "transitions": "Use specific transitions, never 'all'. e.g., transition-colors duration-200, transition-transform duration-200 ease-out.",
+    "hover_states": "All interactive elements must change visually (slight background lighten or border highlight).",
+    "loaders": "Use skeleton loaders matching the exact shape of the content, pulsing subtly with bg-zinc-800/50."
+  },
+  "accessibility": {
+    "contrast": "Ensure text over backgrounds meets at least 4.5:1 ratio. Muted text should still be readable (text-zinc-400 on #0A0A0B).",
+    "focus": "Use focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none for keyboard navigation.",
+    "testing": "All interactive elements MUST include data-testid attribute (e.g., data-testid='sidebar-nav-dashboard')."
+  },
+  "media": {
+    "images": {
+      "avatars": [
+        "https://images.unsplash.com/photo-1609436132311-e4b0c9370469?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTF8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NjcyMTE0M3ww&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTF8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NjcyMTE0M3ww&ixlib=rb-4.1.0&q=85"
+      ],
+      "app_icons": [
+        "https://images.unsplash.com/photo-1644310885721-98c5c7f94ca3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMDNkJTIwYXBwJTIwaWNvbnxlbnwwfHx8fDE3ODY3ODg2NzJ8MA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1644318295821-12c4ddf2a36e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMDNkJTIwYXBwJTIwaWNvbnxlbnwwfHx8fDE3ODY3ODg2NzJ8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "logos": [
+        "https://images.unsplash.com/photo-1705988142466-e468bc654eeb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxjb21wYW55JTIwbG9nbyUyMHdoaXRlJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODY3ODg2ODF8MA&ixlib=rb-4.1.0&q=85"
+      ]
+    },
+    "instruction": "Use images strictly from the provided list. Do not use placeholder services. avatars for user/team profiles, app_icons for the global application selector, logos for competitor/integration contexts."
+  },
+  "GENERAL_UI_UX_DESIGN_GUIDELINES": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy and background lightness shifts in dark mode.",
+    "Use glass-morphism effects sparingly and strategically (e.g., sticky headers).",
+    "You MUST NOT apply universal transition (e.g., transition: all). Always add transitions for specific properties.",
+    "You MUST NOT center align the app container. Do not add '.App { text-align: center; }'.",
+    "Always use modern button styles with interaction animations and colors relevant to the app style.",
+    "NEVER use AI assistant Emoji characters (like 🤖🧠) for icons. Use proper SVG icons (Lucide React).",
+    "Every interaction needs micro-animations - hover states, transitions. Static = dead.",
+    "Subtle grain textures, custom selection states, and loading animations separate good from extraordinary.",
+    "Missing categories = main agent will use placeholder text which is FORBIDDEN. Use the provided image URLs.",
+    "Prioritize using pre-existing components from src/components/ui. Use Sonner for toasts."
+  ]
+}
