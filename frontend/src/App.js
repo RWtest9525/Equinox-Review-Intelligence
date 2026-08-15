@@ -12,6 +12,7 @@ import RatingAnalytics from "@/pages/RatingAnalytics";
 import Sentiment from "@/pages/Sentiment";
 import Topics from "@/pages/Topics";
 import AIInsights from "@/pages/AIInsights";
+import LiveReviews from "@/pages/LiveReviews";
 import Competitors from "@/pages/Competitors";
 import CompetitorReviews from "@/pages/CompetitorReviews";
 import Benchmarking from "@/pages/Benchmarking";
@@ -64,6 +65,7 @@ export default function App() {
               <Route path="/sentiment" element={<Sentiment />} />
               <Route path="/topics" element={<Topics />} />
               <Route path="/ai-insights" element={<AIInsights />} />
+              <Route path="/live-reviews" element={<LiveReviews />} />
               <Route path="/competitors" element={<Competitors />} />
               <Route path="/competitor-reviews" element={<CompetitorReviews />} />
               <Route path="/benchmarking" element={<Benchmarking />} />

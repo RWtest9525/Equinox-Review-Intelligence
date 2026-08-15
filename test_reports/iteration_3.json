@@ -1,0 +1,47 @@
+{
+  "summary": "Verified new Live Reviews feature end-to-end. Backend: 13/13 new pytest cases in test_reviews_export.py pass (summary aggregate, rating filter matches distribution, date filter, CSV export headers/columns/row-count/filename, regression). Full backend regression 47/47 (excluding gplay live which was verified in iter_2). Frontend E2E: super_admin login -> sidebar 'Live Data' section with 'Live Reviews' -> /live-reviews -> Aarohi live app auto-selected (29 reviews) -> 1★=4 (avg 1), 5★=25 (avg 5), 2/3/4★=0 (matches distribution bar) -> reset -> future date range (2099) -> 0 reviews + empty state -> live-export downloaded CSV (30 lines = 1 header + 29 rows) with correct 15-col header -> live-docs panel visible -> gplay-sync-btn opens gplay-dialog from Live Reviews page, resolve 'spotify' returns 5 matches -> regression: /integrations no longer has gplay-live-card, shows pointer to Live Data, Dashboard/Reviews still load. Loaded skills: ai-testing-core (gplay AI already validated in iter_2; not re-run here to avoid quota/pollution — remains in scope but reused evidence).",
+  "ai_feature_verdicts": [
+    "gplay resolve from Live Reviews page - pass - evidence: Playwright clicked gplay-sync-btn on /live-reviews, typed 'spotify' in gplay-query, gplay-resolve returned 5 matches with app_id containing 'spotify'. Command: playwright script above.",
+    "gplay sync (end-to-end fetch of real reviews) - not-in-scope-this-iteration - evidence: no code changes to routes_gplay.py or gplay.py this iteration; full sync flow already passed in iteration_2 with imported=30/fetched=30. Not re-run to avoid DB pollution + provider quota.",
+    "Reviews sheet export (CSV, real data) - pass - evidence: GET /api/reviews/export?application_id=<demo> -> 200; Content-Type=text/csv; X-Total-Rows header present; Content-Disposition: attachment; filename=reviews_export_YYYYMMDD.csv; CSV header row matches the 15 columns exactly (Review ID,Date (UTC),Rating,Sentiment,Topic,Reviewer,Country,App Version,Language,Review Text,Reply Status,Published Reply,Reply Date (UTC),Platform,Source). Frontend downloaded 30-line CSV for Aarohi live app (1 header + 29 rows) matching filtered count. Command: pytest tests/test_reviews_export.py::TestReviewsExportCSV.",
+    "Reviews summary aggregation - pass - evidence: GET /api/reviews/summary?rating=5 total equals distribution[stars=5].count from unfiltered call (asserted). avg_rating=5 when rating=5 filter applied. sum(distribution.count) == total. future date range returns total=0.",
+    "Date-range filter on /reviews list - pass - evidence: GET /api/reviews with date_from=date_to=<earliest date in seed> returns only reviews on that day; date_from=2099-01-01 returns total=0. Frontend applied 2099 range and Reviews (filtered) card showed 0 + 'No reviews match these filters' empty state."
+  ],
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "LiveReviews table header (desktop grid)", "issues": ["Column headers 'Rating / Review / Reviewer / Sentiment / Topic / Version / Date' are only visible on md+ (col-span-* grid); mobile view collapses to no headers — acceptable but a small 'view on desktop' hint would improve UX. Non-blocking."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reviews_export.py",
+    "/app/backend/tests/test_gplay_live.py",
+    "/app/backend/tests/test_equinox_backend.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_reviews._date_range mixes ISO date formats — date_from uses 'YYYY-MM-DDT00:00:00' (naive) while date_to uses 'YYYY-MM-DDT23:59:59.999999+00:00' (tz-aware). Because reviews.created_at is stored as ISO strings from now_iso() (tz-aware), the string comparison still works but is fragile: if any review is inserted with a naive isoformat, the $gte comparison could misorder. Recommend normalizing both bounds to the same format (either both naive or both with +00:00 offset).",
+    "routes_reviews.export_reviews caps results at 20000 rows with .to_list(20000) but neither warns nor paginates — a super_admin export across all orgs could silently truncate. Consider (a) surfacing a warning header if len(rows)==20000, or (b) streaming the CSV via StreamingResponse.",
+    "routes_reviews.reviews_summary loads full rating+sentiment lists into memory (.to_list(20000)) and computes counts in Python. For high-volume tenants this should use an aggregation pipeline ($group by rating and $group by sentiment) for perf. Fine at current seed scale.",
+    "LiveReviews.jsx filters live-apps as (a.source === 'google_play_live' || a.google_play_status === 'connected'). Since seeded demo apps carry google_play_status='not_connected', this correctly hides demo. Confirmed via UI (only 'Aarohi' — a previously-synced live app — appears in live-app-selector). Good.",
+    "LiveReviews.jsx exportSheet reads currentApp before calling but there is no visible export-loading toast — a very large CSV would look frozen. Minor UX (button disabled + label change already covers 'Exporting…').",
+    "GooglePlaySync trigger prop pattern is clean; live-reviews hero uses a distinct glass-styled button that still shares data-testid='gplay-sync-btn' with Integrations regression pointer. Since Integrations no longer renders the sync button (only a text pointer), the previous duplicate-testid warning from iter_2 is now resolved."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reviews_export.py (new)"
+  ],
+  "success_rate": {"backend": "100% (13/13 new + 47/47 full regression excl. gplay-live)", "frontend": "100% (all Live Reviews flows + regression)"},
+  "test_credentials": "admin@equinox.ai / Equinox@2026 (super_admin) — verified working. member@zenpay.com / Member@2026 (client_member) — verified in earlier iterations.",
+  "seed_data_creation": "No new apps or reviews created in this run. The 'Aarohi' live-synced app (from a prior iteration) still exists in super_admin org and was used as the read-only Live Reviews fixture. No cleanup performed since no data was synced during this run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New tests live at /app/backend/tests/test_reviews_export.py (13 cases, ~2s). All use seeded demo data — no network. Testids for Live Reviews UI: nav-live-reviews, gplay-sync-btn (also on hero), live-app-selector, live-from, live-to, live-reset, live-export, live-star (segmented) + live-star-all/5/4/3/2/1, live-row-<id>, live-prev, live-next, live-docs. Backend endpoints: GET /api/reviews (adds date_from, date_to), GET /api/reviews/summary (application_id, rating, date_from, date_to), GET /api/reviews/export (application_id, rating, platform, sentiment, date_from, date_to, search — returns text/csv with X-Total-Rows). Regression: /integrations page no longer renders gplay-live-card; sync moved to /live-reviews. A leftover 'Aarohi' live app from earlier E2E runs is present in super_admin org (source=google_play_live) — safe to delete via DELETE /api/applications/<id> if the demo dataset needs to be pristine, otherwise it's a useful non-demo fixture for future tests.",
+  "rca of the issue": "n/a — feature works end-to-end. Only refinements suggested in critical_code_review_comments (date-range format normalization, streaming CSV for large exports, aggregation pipeline for summary at scale)."
+}

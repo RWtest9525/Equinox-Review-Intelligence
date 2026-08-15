@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from typing import Optional
 from deps import db, get_current_user, org_scope
 from datetime import datetime, timezone, timedelta
+import csv
+import io
 
 router = APIRouter(prefix="/api", tags=["reviews"])
+
+
+def _date_range(date_from: Optional[str], date_to: Optional[str]):
+    rng = {}
+    if date_from:
+        rng["$gte"] = f"{date_from}T00:00:00+00:00"
+    if date_to:
+        rng["$lte"] = f"{date_to}T23:59:59.999999+00:00"
+    return rng or None
 
 
 @router.get("/reviews")
@@ -21,6 +32,8 @@ async def list_reviews(
     quick_filter: Optional[str] = None,
     search: Optional[str] = None,
     days: Optional[int] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     sort: str = "recent",
     page: int = 1,
     page_size: int = 25,
@@ -46,6 +59,9 @@ async def list_reviews(
         q["reply_status"] = reply_status
     if days:
         q["created_at"] = {"$gte": (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()}
+    dr = _date_range(date_from, date_to)
+    if dr:
+        q["created_at"] = dr
 
     if quick_filter == "unreplied":
         q["reply_status"] = "unreplied"
@@ -72,6 +88,94 @@ async def list_reviews(
     cursor = db.reviews.find(q, {"_id": 0}).sort([sort_field]).skip((page - 1) * page_size).limit(page_size)
     reviews = await cursor.to_list(page_size)
     return {"reviews": reviews, "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/reviews/export")
+async def export_reviews(
+    user: dict = Depends(get_current_user),
+    application_id: Optional[str] = None,
+    platform: Optional[str] = None,
+    rating: Optional[int] = None,
+    sentiment: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    search: Optional[str] = None,
+):
+    q = dict(org_scope(user))
+    if application_id:
+        q["application_id"] = application_id
+    if platform and platform in ("google_play", "app_store"):
+        q["platform"] = platform
+    if rating:
+        q["rating"] = rating
+    if sentiment:
+        q["sentiment"] = sentiment
+    dr = _date_range(date_from, date_to)
+    if dr:
+        q["created_at"] = dr
+    if search:
+        q["$or"] = [
+            {"text": {"$regex": search, "$options": "i"}},
+            {"reviewer_name": {"$regex": search, "$options": "i"}},
+        ]
+    rows = await db.reviews.find(q, {"_id": 0}).sort([("created_at", -1)]).to_list(20000)
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Review ID", "Date (UTC)", "Rating", "Sentiment", "Topic", "Reviewer",
+                "Country", "App Version", "Language", "Review Text", "Reply Status",
+                "Published Reply", "Reply Date (UTC)", "Platform", "Source"])
+    for r in rows:
+        w.writerow([
+            r.get("external_id") or r.get("id"),
+            (r.get("created_at") or "")[:19].replace("T", " "),
+            r.get("rating"), r.get("sentiment"), r.get("topic"), r.get("reviewer_name"),
+            r.get("country"), r.get("app_version"), (r.get("language") or "").upper(),
+            (r.get("text") or "").replace("\n", " ").strip(),
+            r.get("reply_status"),
+            (r.get("published_reply") or "").replace("\n", " ").strip(),
+            (r.get("reply_at") or "")[:19].replace("T", " "),
+            r.get("platform"), r.get("source") or ("demo" if r.get("is_demo") else "live"),
+        ])
+    csv_bytes = buf.getvalue()
+    fname = f"reviews_export_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"', "X-Total-Rows": str(len(rows))},
+    )
+
+
+@router.get("/reviews/summary")
+async def reviews_summary(
+    user: dict = Depends(get_current_user),
+    application_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    rating: Optional[int] = None,
+):
+    q = dict(org_scope(user))
+    if application_id:
+        q["application_id"] = application_id
+    if rating:
+        q["rating"] = rating
+    dr = _date_range(date_from, date_to)
+    if dr:
+        q["created_at"] = dr
+    rows = await db.reviews.find(q, {"_id": 0, "rating": 1, "sentiment": 1}).to_list(20000)
+    total = len(rows)
+    dist = {i: 0 for i in range(1, 6)}
+    sent = {"positive": 0, "neutral": 0, "negative": 0}
+    for r in rows:
+        dist[r["rating"]] = dist.get(r["rating"], 0) + 1
+        sent[r["sentiment"]] = sent.get(r["sentiment"], 0) + 1
+    avg = round(sum(r["rating"] for r in rows) / total, 2) if total else 0
+    return {
+        "total": total, "avg_rating": avg,
+        "distribution": [{"stars": s, "count": dist[s], "pct": round(dist[s] / total * 100) if total else 0} for s in range(5, 0, -1)],
+        "sentiment": sent,
+    }
+
 
 
 @router.get("/reviews/filters")

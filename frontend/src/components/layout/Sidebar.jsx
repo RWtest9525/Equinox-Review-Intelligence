@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, MessageSquare, Star, SmilePlus, Tags, Sparkles,
   Swords, MessagesSquare, BarChart3, Bot, Brain, FileText, CalendarClock,
-  AppWindow, Building2, Users, Plug, Bell, Settings, ShieldCheck,
+  AppWindow, Building2, Users, Plug, Bell, Settings, ShieldCheck, Radio,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,10 @@ const SECTIONS = [
       { to: "/topics", icon: Tags, label: "Topics", id: "topics" },
       { to: "/ai-insights", icon: Sparkles, label: "AI Insights", id: "ai-insights" },
     ],
+  },
+  {
+    label: "Live Data",
+    items: [{ to: "/live-reviews", icon: Radio, label: "Live Reviews", id: "live-reviews" }],
   },
   {
     label: "Competition",
