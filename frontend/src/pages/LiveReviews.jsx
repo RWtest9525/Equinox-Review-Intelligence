@@ -39,6 +39,7 @@ export default function LiveReviews() {
 
   useEffect(() => {
     if (!appId && liveApps.length) setAppId(liveApps[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveApps]);
 
   const baseParams = () => {

@@ -22,6 +22,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!selApp && applications.length) setSelApp(applications[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applications]);
 
   const { isLoading } = useQuery({

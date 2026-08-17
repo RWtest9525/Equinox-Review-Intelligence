@@ -19,6 +19,7 @@ export default function Reports({ scheduled = false }) {
   const [type, setType] = useState(scheduled ? "weekly" : "weekly");
   const [busy, setBusy] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (!selApp && applications.length) setSelApp(applications[0].id); }, [applications]);
 
   const q = useQuery({ queryKey: ["reports"], queryFn: async () => (await api.get("/reports")).data.reports });
