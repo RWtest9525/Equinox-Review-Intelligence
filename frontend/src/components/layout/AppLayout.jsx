@@ -22,11 +22,14 @@ export default function AppLayout() {
           </SheetContent>
         </Sheet>
 
-        <div className="lg:pl-64">
+        <div className="lg:pl-64 flex flex-col min-h-screen">
           <Topbar onMenu={() => setDrawer(true)} />
-          <main className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 py-6 animate-fade-up">
+          <main className="relative z-10 mx-auto max-w-[1600px] w-full px-4 sm:px-6 py-6 animate-fade-up flex-1">
             <Outlet />
           </main>
+          <footer className="border-t border-white/[0.06] py-3.5 px-6 text-center text-xs text-zinc-500">
+            Build By <span className="text-rose-500">♥️</span> From Equinox Marketing Agency
+          </footer>
         </div>
       </div>
     </ScopeProvider>

@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart,
 } from "recharts";
-import { Star, MessageSquare, Gauge, SmilePlus, Reply, TrendingUp, Sparkles, ArrowRight } from "lucide-react";
+import { Star, MessageSquare, Gauge, SmilePlus, Reply, TrendingUp, Sparkles, ArrowRight, Mail } from "lucide-react";
 import api from "@/lib/api";
 import { useScope } from "@/context/AppScope";
 import {
@@ -77,6 +77,38 @@ export default function Dashboard() {
           </span>
         }
       />
+
+      {/* Client Services Inquiry Banner */}
+      <div className="mb-6 rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-950/40 via-[#121218] to-[#0D0D11] p-4 shadow-lg backdrop-blur-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <Mail size={19} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-400">Services & Inquiries</span>
+              <span className="h-1 w-1 rounded-full bg-blue-400/50" />
+              <span className="text-[11px] text-zinc-400">Dedicated Support</span>
+            </div>
+            <div className="mt-0.5 text-sm font-medium text-zinc-200">
+              For Query Regarding Services{" "}
+              <a
+                href="mailto:info@equinox4review.in"
+                className="font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors ml-1"
+              >
+                info@equinox4review.in
+              </a>
+            </div>
+          </div>
+        </div>
+        <a
+          href="mailto:info@equinox4review.in"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-[0_0_16px_rgba(59,130,246,0.35)] hover:bg-blue-500 hover:shadow-[0_0_22px_rgba(59,130,246,0.55)] transition-all shrink-0"
+        >
+          <Mail size={14} />
+          <span>info@equinox4review.in</span>
+        </a>
+      </div>
 
       {/* KPI ROW */}
       <StatePanel loading={dash.isLoading} error={dash.isError && "Could not load dashboard"} onRetry={dash.refetch} rows={2}>

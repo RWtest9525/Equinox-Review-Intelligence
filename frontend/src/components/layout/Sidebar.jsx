@@ -79,7 +79,7 @@ export default function Sidebar({ onNavigate }) {
         </div>
         <div className="leading-tight">
           <div className="font-display text-sm font-bold tracking-tight text-zinc-50">Equinox</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Reputation AI</div>
+          <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-400">Reviews Intelligence</div>
         </div>
       </div>
 
@@ -119,9 +119,8 @@ export default function Sidebar({ onNavigate }) {
         })}
       </nav>
 
-      <div className="border-t border-white/[0.06] px-4 py-3 flex items-center gap-2 text-[11px] text-zinc-500">
-        <ShieldCheck size={13} className="text-emerald-500" />
-        Equinox Zyvena Pvt Ltd
+      <div className="border-t border-white/[0.06] px-3.5 py-3 text-[11px] text-zinc-400 text-center leading-tight">
+        Build By <span className="text-rose-500">♥️</span> From Equinox Marketing Agency
       </div>
     </div>
   );

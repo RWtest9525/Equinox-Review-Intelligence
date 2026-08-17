@@ -29,7 +29,7 @@ export default function Login() {
       } else {
         await register({ name, email, password, organization_name: org });
       }
-      toast.success("Welcome to Equinox");
+      toast.success("Welcome to Equinox Reviews Intelligence");
       navigate("/");
     } catch (err) {
       setError(apiErr(err));
@@ -48,8 +48,8 @@ export default function Login() {
             <span className="font-display text-lg font-extrabold text-white">E</span>
           </div>
           <div>
-            <div className="font-display text-lg font-bold text-zinc-50">Equinox AI</div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Reputation Intelligence</div>
+            <div className="font-display text-lg font-bold text-zinc-50">Equinox</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">Reviews Intelligence</div>
           </div>
         </div>
 
@@ -73,7 +73,9 @@ export default function Login() {
             ))}
           </div>
         </div>
-        <div className="relative text-[11px] text-zinc-600">© Equinox Zyvena Pvt Ltd</div>
+        <div className="relative text-[11px] text-zinc-400">
+          Build By <span className="text-rose-500">♥️</span> From Equinox Marketing Agency
+        </div>
       </div>
 
       {/* Right form */}
@@ -83,7 +85,10 @@ export default function Login() {
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700">
               <span className="font-display text-lg font-extrabold text-white">E</span>
             </div>
-            <div className="font-display text-lg font-bold text-zinc-50">Equinox AI</div>
+            <div>
+              <div className="font-display text-lg font-bold text-zinc-50">Equinox</div>
+              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">Reviews Intelligence</div>
+            </div>
           </div>
 
           <h2 className="font-display text-2xl font-bold text-zinc-50">
@@ -140,6 +145,10 @@ export default function Login() {
               Super Admin — admin@equinox.ai / Equinox@2026
             </div>
           )}
+
+          <div className="mt-8 text-center text-xs text-zinc-500">
+            Build By <span className="text-rose-500">♥️</span> From Equinox Marketing Agency
+          </div>
         </div>
       </div>
     </div>

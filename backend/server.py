@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("equinox")
 
-app = FastAPI(title="Equinox AI Reputation Intelligence")
+app = FastAPI(title="Equinox Reviews Intelligence")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,7 +31,7 @@ for mod in (routes_auth, routes_core, routes_reviews, routes_analytics, routes_a
 
 @app.get("/api/")
 async def root():
-    return {"service": "Equinox AI Reputation Intelligence", "status": "ok"}
+    return {"service": "Equinox Reviews Intelligence", "status": "ok"}
 
 
 async def seed_admin():
