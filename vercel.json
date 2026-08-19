@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cd frontend && yarn install && CI=false yarn build",
-  "outputDirectory": "frontend/build",
   "framework": "create-react-app",
+  "installCommand": "cd frontend && npm install --legacy-peer-deps",
+  "buildCommand": "cd frontend && CI=false npm run build",
+  "outputDirectory": "frontend/build",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -9,3 +10,4 @@
     }
   ]
 }
+

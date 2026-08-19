@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+const BASE = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 const TOKEN_KEY = "equinox_token";
 
 export const api = axios.create({ baseURL: BASE });
