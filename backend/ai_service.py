@@ -1,4 +1,4 @@
-"""AI service powered by Emergent Universal LLM key (OpenAI gpt-5.4).
+"""AI service powered by OpenAI / LLM with deterministic smart fallbacks.
 
 All functions operate on REAL review data passed in from the database.
 On LLM failure a clearly-flagged deterministic fallback is returned so the UI
@@ -11,9 +11,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
-MODEL_PROVIDER = "openai"
-MODEL_NAME = "gpt-5.4"
+AI_API_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("AI_API_KEY")
+MODEL_NAME = os.environ.get("AI_MODEL_NAME", "gpt-4o-mini")
 
 
 def _extract_json(text: str):
@@ -29,17 +28,20 @@ def _extract_json(text: str):
 
 
 async def _chat(system_message: str, prompt: str, session_id: str) -> str:
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    if not AI_API_KEY:
+        raise ValueError("AI API key not configured")
+    import openai
+    client = openai.AsyncOpenAI(api_key=AI_API_KEY)
+    resp = await client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.7,
+    )
+    return resp.choices[0].message.content or ""
 
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=session_id,
-        system_message=system_message,
-    ).with_model(MODEL_PROVIDER, MODEL_NAME)
-    resp = await chat.send_message(UserMessage(text=prompt))
-    if isinstance(resp, str):
-        return resp
-    return getattr(resp, "content", str(resp))
 
 
 def _brand_block(brand: dict, app_name: str) -> str:

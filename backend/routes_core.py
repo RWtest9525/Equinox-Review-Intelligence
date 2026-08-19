@@ -242,5 +242,5 @@ async def system_health(user: dict = Depends(require_role("super_admin"))):
         "competitors": await db.competitors.count_documents({}),
         "active_alerts": await db.alerts.count_documents({"status": "active"}),
         "database": "healthy",
-        "ai_provider": "openai/gpt-5.4 (Emergent Universal Key)",
+        "ai_provider": "AI Intelligence (Equinox Engine)",
     }

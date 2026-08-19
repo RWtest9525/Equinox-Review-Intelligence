@@ -40,6 +40,7 @@
     "date-fns": "4.1.0",
     "dayjs": "1.11.13",
     "embla-carousel-react": "8.6.0",
+    "firebase": "^11.10.0",
     "framer-motion": "11.18.0",
     "input-otp": "1.4.2",
     "lodash": "4.18.1",
@@ -80,7 +81,6 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@craco/craco": "7.1.0",
-    "@emergentbase/visual-edits": "https://assets.emergent.sh/npm/emergentbase-visual-edits-1.0.13.tgz",
     "@eslint/js": "9.23.0",
     "@types/lodash": "4.17.24",
     "autoprefixer": "10.4.20",

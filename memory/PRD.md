@@ -5,9 +5,9 @@ Production-ready multi-tenant SaaS for agencies & app businesses to monitor, ana
 
 ## Architecture
 - **Backend**: FastAPI (modular routers) + MongoDB (motor). Auth = JWT Bearer (bcrypt). RBAC via `require_role` deps; tenant isolation via `org_scope()` on every query.
-  - Modules: `deps.py` (db/auth/rbac), `analytics.py` (all metrics + forecast computed from DB), `ai_service.py` (Emergent LLM gpt-5.4), `providers.py` (GooglePlay/Apple/Mock provider abstraction), `seed_data.py` (demo data), routes_* files.
-- **Frontend**: React + react-router + @tanstack/react-query + recharts + shadcn/ui + Tailwind. Dark-first premium UI (Manrope/Inter, blue+gold accents, glass topbar).
-- **AI**: OpenAI gpt-5.4 via Emergent Universal LLM key (EMERGENT_LLM_KEY) — replies, refine, bulk, executive summary, insights, AI search, competitor insights. Graceful fallback flagged `source='fallback'`.
+  - Modules: `deps.py` (db/auth/rbac), `analytics.py` (all metrics + forecast computed from DB), `ai_service.py` (AI Intelligence Service), `providers.py` (GooglePlay/Apple/Mock provider abstraction), `seed_data.py` (demo data), routes_* files.
+- **Frontend**: React + Firebase SDK + react-router + @tanstack/react-query + recharts + shadcn/ui + Tailwind. Dark-first premium UI (Manrope/Inter, blue+gold accents, glass topbar).
+- **AI**: OpenAI / LLM intelligence — replies, refine, bulk, executive summary, insights, AI search, competitor insights. Graceful fallback flagged `source='fallback'`.
 - **Data providers**: Google Play & Apple stubbed as NOT-CONNECTED (credentials pluggable later); MockProvider serves demo data with a clear "Demo Data" banner everywhere.
 
 ## User Personas
