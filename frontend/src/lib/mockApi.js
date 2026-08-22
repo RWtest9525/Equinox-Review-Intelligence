@@ -96,7 +96,7 @@ function initSeedDB() {
       id: "user_admin",
       name: "Equinox Admin",
       email: "admin@equinox.ai",
-      password: "password123", // fallback
+      password: "password123",
       role: "super_admin",
       organization_id: orgInternal.id,
       status: "active",
@@ -324,11 +324,10 @@ export async function handleMockRequest(method, url, data, params = {}) {
     const { email, password } = data || {};
     let user = users.find((u) => u.email.toLowerCase() === (email || "").toLowerCase());
     if (!user) {
-      // Auto-create or allow clean demo login
       user = {
         id: generateId(),
         name: email.split("@")[0] || "User",
-        email: email.toLowerCase(),
+        email: (email || "user@example.com").toLowerCase(),
         password: password || "password",
         role: "client_admin",
         organization_id: orgs[0]?.id || "org_internal_1",
@@ -368,7 +367,7 @@ export async function handleMockRequest(method, url, data, params = {}) {
     const newUser = {
       id: generateId(),
       name: name || "User",
-      email: (email || "").toLowerCase(),
+      email: (email || "user@example.com").toLowerCase(),
       password: password || "password",
       role: "client_admin",
       organization_id: orgId,
@@ -522,7 +521,7 @@ export async function handleMockRequest(method, url, data, params = {}) {
     return { status: 200, data: { ok: true, review_id: reviewId, reply: replyText } };
   }
 
-  // 6. Analytics: Dashboard KPIs & Trends
+  // 6. Analytics: Dashboard KPIs & Trends (Matching Dashboard.jsx fields exactly)
   if (normalizedUrl === "/analytics/dashboard" || normalizedUrl === "/analytics/overview") {
     let filtered = [...reviews];
     if (query.application_id && query.application_id !== "all") {
@@ -532,27 +531,62 @@ export async function handleMockRequest(method, url, data, params = {}) {
     const avgRating = Number((filtered.reduce((acc, r) => acc + r.rating, 0) / total).toFixed(2));
     const posCount = filtered.filter((r) => r.sentiment === "positive").length;
     const negCount = filtered.filter((r) => r.sentiment === "negative").length;
-    const neuCount = total - posCount - negCount;
+    const neuCount = Math.max(0, total - posCount - negCount);
+
+    const posPct = Math.round((posCount / total) * 100) || 74;
+    const neuPct = Math.round((neuCount / total) * 100) || 14;
+    const negPct = Math.max(0, 100 - posPct - neuPct);
+
+    const repliedList = filtered.filter((r) => r.reply_status === "published");
+    const aiCount = repliedList.filter((r) => r.reply_source === "ai").length;
 
     return {
       status: 200,
       data: {
         kpis: {
-          current_rating: avgRating || 4.52,
-          rating_change: +0.08,
-          total_reviews: total,
-          review_growth: "+14.2%",
-          sentiment_score: Math.round((posCount / total) * 100) || 78,
-          positive_pct: Math.round((posCount / total) * 100) || 74,
-          negative_pct: Math.round((negCount / total) * 100) || 12,
-          neutral_pct: Math.round((neuCount / total) * 100) || 14,
-          response_rate: 86.4,
-          avg_response_time: "2.4 hrs",
+          current_rating: avgRating || 4.54,
+          rating_change: 0.08,
+          prev_rating: 4.46,
+          reviews_today: Math.min(14, Math.floor(total * 0.08)),
+          reviews_7d: Math.min(92, Math.floor(total * 0.35)),
+          reviews_30d: total,
+          reviews_period: total,
+          velocity: Number((total / 30).toFixed(1)) || 11.3,
+          prev_velocity: 10.1,
+          velocity_change: 1.2,
+          sentiment: {
+            positive: posCount,
+            neutral: neuCount,
+            negative: negCount,
+            positive_pct: posPct,
+            neutral_pct: neuPct,
+            negative_pct: negPct,
+          },
+          sentiment_prev: {
+            positive: Math.round(posCount * 0.9),
+            neutral: neuCount,
+            negative: Math.round(negCount * 1.1),
+            positive_pct: 70,
+            neutral_pct: 15,
+            negative_pct: 15,
+          },
+          reply_coverage: Math.round((repliedList.length / total) * 100) || 86,
+          replied: repliedList.length || 28,
+          unreplied: Math.max(0, total - repliedList.length) || 12,
+          ai_replies: aiCount || 18,
+          manual_replies: Math.max(0, repliedList.length - aiCount) || 10,
         },
         forecast: {
-          projected_rating_30d: Number((avgRating + 0.05).toFixed(2)),
-          confidence: 0.92,
-          trend: "upward",
+          current: avgRating || 4.54,
+          p7: Number((avgRating + 0.02).toFixed(2)),
+          p30: Number((avgRating + 0.06).toFixed(2)),
+          p90: Number((avgRating + 0.12).toFixed(2)),
+          confidence: "High (94%)",
+          projection: [
+            { date: new Date().toISOString().split("T")[0], forecast: avgRating || 4.54 },
+            { date: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0], forecast: Number((avgRating + 0.02).toFixed(2)) },
+            { date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0], forecast: Number((avgRating + 0.06).toFixed(2)) },
+          ],
         },
       },
     };
@@ -562,7 +596,7 @@ export async function handleMockRequest(method, url, data, params = {}) {
     const days = Number(query.days) || 30;
     const series = [];
     const nowTs = Date.now();
-    let current = 4.3;
+    let current = 4.35;
     for (let i = days; i >= 0; i -= 2) {
       const dt = new Date(nowTs - i * 86400000);
       current = Math.min(4.9, Math.max(3.8, current + (Math.random() * 0.06 - 0.02)));
@@ -578,6 +612,7 @@ export async function handleMockRequest(method, url, data, params = {}) {
       { date: series[series.length - 1].date, forecast: series[series.length - 1].rating },
       { date: new Date(nowTs + 7 * 86400000).toISOString().split("T")[0], forecast: Number((current + 0.04).toFixed(2)) },
       { date: new Date(nowTs + 14 * 86400000).toISOString().split("T")[0], forecast: Number((current + 0.08).toFixed(2)) },
+      { date: new Date(nowTs + 30 * 86400000).toISOString().split("T")[0], forecast: Number((current + 0.12).toFixed(2)) },
     ];
     return { status: 200, data: { series, forecast } };
   }
@@ -603,21 +638,31 @@ export async function handleMockRequest(method, url, data, params = {}) {
   }
 
   if (normalizedUrl === "/analytics/rating-distribution") {
+    let filtered = [...reviews];
+    if (query.application_id && query.application_id !== "all") {
+      filtered = filtered.filter((r) => r.application_id === query.application_id);
+    }
+    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    filtered.forEach((r) => {
+      if (counts[r.rating] !== undefined) counts[r.rating]++;
+    });
+    const total = filtered.length || 1;
     return {
       status: 200,
       data: {
         distribution: [
-          { star: 5, count: 850, percentage: 68 },
-          { star: 4, count: 210, percentage: 17 },
-          { star: 3, count: 95, percentage: 7 },
-          { star: 2, count: 45, percentage: 4 },
-          { star: 1, count: 50, percentage: 4 },
+          { stars: 5, star: 5, count: counts[5] || 85, pct: Math.round(((counts[5] || 85) / total) * 100), percentage: Math.round(((counts[5] || 85) / total) * 100) },
+          { stars: 4, star: 4, count: counts[4] || 25, pct: Math.round(((counts[4] || 25) / total) * 100), percentage: Math.round(((counts[4] || 25) / total) * 100) },
+          { stars: 3, star: 3, count: counts[3] || 12, pct: Math.round(((counts[3] || 12) / total) * 100), percentage: Math.round(((counts[3] || 12) / total) * 100) },
+          { stars: 2, star: 2, count: counts[2] || 6, pct: Math.round(((counts[2] || 6) / total) * 100), percentage: Math.round(((counts[2] || 6) / total) * 100) },
+          { stars: 1, star: 1, count: counts[1] || 6, pct: Math.round(((counts[1] || 6) / total) * 100), percentage: Math.round(((counts[1] || 6) / total) * 100) },
         ],
+        total,
       },
     };
   }
 
-  if (normalizedUrl === "/analytics/sentiment-breakdown") {
+  if (normalizedUrl === "/analytics/sentiment-breakdown" || normalizedUrl === "/analytics/sentiment") {
     return {
       status: 200,
       data: {
@@ -632,20 +677,25 @@ export async function handleMockRequest(method, url, data, params = {}) {
           { topic: "Customer Support", sentiment: "negative", score: 32, mention_count: 110 },
           { topic: "Performance", sentiment: "neutral", score: 62, mention_count: 95 },
         ],
+        trend: [
+          { date: "2026-08-01", positive_pct: 72, neutral_pct: 16, negative_pct: 12 },
+          { date: "2026-08-10", positive_pct: 75, neutral_pct: 14, negative_pct: 11 },
+          { date: "2026-08-20", positive_pct: 78, neutral_pct: 12, negative_pct: 10 },
+        ],
       },
     };
   }
 
-  if (normalizedUrl === "/analytics/topic-breakdown") {
+  if (normalizedUrl === "/analytics/topic-breakdown" || normalizedUrl === "/analytics/topics") {
     return {
       status: 200,
       data: {
         topics: [
-          { topic: "Payments", count: 420, sentiment_score: 82, positive: 340, negative: 40, neutral: 40 },
-          { topic: "Login & Auth", count: 280, sentiment_score: 75, positive: 210, negative: 40, neutral: 30 },
-          { topic: "UI/UX Experience", count: 240, sentiment_score: 90, positive: 216, negative: 12, neutral: 12 },
-          { topic: "Customer Support", count: 180, sentiment_score: 45, positive: 70, negative: 85, neutral: 25 },
-          { topic: "Performance", count: 150, sentiment_score: 68, positive: 100, negative: 30, neutral: 20 },
+          { topic: "Payments", count: 420, sentiment_score: 82, positive: 340, negative: 40, neutral: 40, trend: "+12%" },
+          { topic: "Login & Auth", count: 280, sentiment_score: 75, positive: 210, negative: 40, neutral: 30, trend: "+8%" },
+          { topic: "UI/UX Experience", count: 240, sentiment_score: 90, positive: 216, negative: 12, neutral: 12, trend: "+15%" },
+          { topic: "Customer Support", count: 180, sentiment_score: 45, positive: 70, negative: 85, neutral: 25, trend: "-4%" },
+          { topic: "Performance", count: 150, sentiment_score: 68, positive: 100, negative: 30, neutral: 20, trend: "+3%" },
         ],
       },
     };
@@ -665,24 +715,41 @@ export async function handleMockRequest(method, url, data, params = {}) {
     };
   }
 
-  // 7. AI Intelligence & Search
+  // 7. AI Executive Summary & Insights
   if (normalizedUrl === "/ai/executive-summary") {
     return {
       status: 200,
       data: {
+        source: "ai",
         summary: "Overall app reputation remains strongly positive across Google Play and App Store with a 4.5+ average rating. Customer sentiment for Payments and UI/UX is exceptionally high (84%+ positive). Key area for improvement is support turnaround time on transaction reversals.",
-        key_positives: [
-          "Payment reliability praised in 88% of transaction-related reviews.",
-          "Latest release 3.4.1 resolved prior login lag complaints.",
-          "High rating retention among daily active users.",
+        insights: [
+          { level: "positive", text: "Payment processing speed and reliability highly appreciated in recent reviews." },
+          { level: "positive", text: "UI upgrade in v3.4.1 received strong 5-star ratings across all regions." },
+          { level: "negative", text: "KYC document verification response time flagged by new users." },
+          { level: "neutral", text: "Feature requests for automatic statement download increased by 14%." }
         ],
-        key_risks: [
-          "Customer support response delays flagged in negative 1-star reviews.",
-          "Occasional biometric authentication glitches on specific Android models.",
-        ],
-        action_recommendations: [
-          "Implement instant auto-replies for KYC-related inquiries.",
-          "Target next sprint on biometric fallback reliability.",
+        recommended_action: "Prioritize automated KYC status notifications to reduce inbound support tickets by an estimated 28%.",
+      },
+    };
+  }
+
+  if (normalizedUrl === "/ai/insights") {
+    return {
+      status: 200,
+      data: {
+        insights: [
+          {
+            title: "Positive Sentiment Surge in Payment Flow",
+            type: "positive",
+            description: "Over 84% of payment-related reviews in the last 14 days were 5 stars, citing instant confirmation.",
+            recommendation: "Highlight speed and zero-failure rate in marketing banners.",
+          },
+          {
+            title: "Support Response Turnaround Bottleneck",
+            type: "negative",
+            description: "1-star reviews frequently mention waiting more than 24 hours for transaction dispute resolution.",
+            recommendation: "Activate AI-assisted auto-replies with ticket tracking links.",
+          }
         ],
       },
     };
@@ -712,12 +779,72 @@ export async function handleMockRequest(method, url, data, params = {}) {
     };
   }
 
-  // 8. Competitors
+  // 8. Competitors & Competitor Reviews
   if (normalizedUrl === "/competitors") {
     return { status: 200, data: { competitors } };
   }
 
-  // 9. Google Play Sync simulation
+  if (normalizedUrl === "/competitor-reviews") {
+    return {
+      status: 200,
+      data: {
+        reviews: [
+          { id: "cr_1", competitor_name: "Google Pay India", rating: 4, text: "Good app but rewards have reduced lately.", sentiment: "neutral", created_at: new Date().toISOString() },
+          { id: "cr_2", competitor_name: "PhonePe UPI", rating: 5, text: "Fast payments and bill recharge works great.", sentiment: "positive", created_at: new Date().toISOString() },
+          { id: "cr_3", competitor_name: "Revolut", rating: 4, text: "Exchange rates are solid, UI is clean.", sentiment: "positive", created_at: new Date().toISOString() }
+        ],
+      },
+    };
+  }
+
+  // 9. Clients, Team, Notifications, Reports, Settings
+  if (normalizedUrl === "/clients") {
+    return { status: 200, data: { clients: orgs.filter((o) => o.type === "client") } };
+  }
+
+  if (normalizedUrl === "/team") {
+    return { status: 200, data: { members: users } };
+  }
+
+  if (normalizedUrl === "/notifications") {
+    return {
+      status: 200,
+      data: {
+        notifications: [
+          { id: "notif_1", title: "Rating Milestone Reached", message: "POP UPI & Cards crossed 4.6 average rating!", time: "2 hours ago", read: false },
+          { id: "notif_2", title: "New Google Play Review Spike", message: "40 new reviews synchronized successfully.", time: "5 hours ago", read: true }
+        ],
+      },
+    };
+  }
+
+  if (normalizedUrl === "/reports" || normalizedUrl === "/scheduled-reports") {
+    return {
+      status: 200,
+      data: {
+        reports: [
+          { id: "rep_1", name: "Weekly Executive Sentiment Report", frequency: "weekly", last_generated: "Yesterday", status: "ready" },
+          { id: "rep_2", name: "Monthly Competitor Benchmark Audit", frequency: "monthly", last_generated: "3 days ago", status: "ready" }
+        ],
+      },
+    };
+  }
+
+  if (normalizedUrl === "/settings") {
+    return {
+      status: 200,
+      data: {
+        settings: {
+          auto_reply_enabled: true,
+          notifications_email: currentUser.email,
+          theme: "dark",
+          digest_frequency: "daily",
+        },
+      },
+    };
+  }
+
+  // 10. Google Play Sync simulation
   if (normalizedUrl === "/gplay/sync" || normalizedUrl === "/gplay/resolve") {
     return {
       status: 200,

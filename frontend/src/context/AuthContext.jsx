@@ -4,14 +4,42 @@ import api, { setToken, clearToken, getToken } from "@/lib/api";
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
 
+const USER_CACHE_KEY = "equinox_cached_user";
+const ORG_CACHE_KEY = "equinox_cached_org";
+
+function getCachedUser() {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getCachedOrg() {
+  try {
+    const raw = localStorage.getItem(ORG_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // null=checking
-  const [org, setOrg] = useState(null);
+  const [user, setUser] = useState(() => {
+    const cached = getCachedUser();
+    const token = getToken();
+    if (cached && token) return cached;
+    return token ? null : false;
+  });
+  const [org, setOrg] = useState(() => getCachedOrg());
 
   useEffect(() => {
     const t = getToken();
     if (!t) {
       setUser(false);
+      localStorage.removeItem(USER_CACHE_KEY);
+      localStorage.removeItem(ORG_CACHE_KEY);
       return;
     }
     api
@@ -19,15 +47,19 @@ export function AuthProvider({ children }) {
       .then((r) => {
         if (r.data && typeof r.data === "object" && r.data.user) {
           setUser(r.data.user);
-          setOrg(r.data.organization || null);
-        } else {
-          clearToken();
-          setUser(false);
+          localStorage.setItem(USER_CACHE_KEY, JSON.stringify(r.data.user));
+          if (r.data.organization) {
+            setOrg(r.data.organization);
+            localStorage.setItem(ORG_CACHE_KEY, JSON.stringify(r.data.organization));
+          }
         }
       })
       .catch(() => {
-        clearToken();
-        setUser(false);
+        // In case of error but token exists, keep cached user intact so user is never logged out
+        const cached = getCachedUser();
+        if (cached) {
+          setUser(cached);
+        }
       });
   }, []);
 
@@ -39,10 +71,12 @@ export function AuthProvider({ children }) {
     }
     setToken(data.access_token);
     setUser(data.user);
+    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(data.user));
     try {
       const me = await api.get("/auth/me");
       if (me.data && me.data.organization) {
         setOrg(me.data.organization);
+        localStorage.setItem(ORG_CACHE_KEY, JSON.stringify(me.data.organization));
       }
     } catch {}
     return data.user;
@@ -56,10 +90,12 @@ export function AuthProvider({ children }) {
     }
     setToken(data.access_token);
     setUser(data.user);
+    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(data.user));
     try {
       const me = await api.get("/auth/me");
       if (me.data && me.data.organization) {
         setOrg(me.data.organization);
+        localStorage.setItem(ORG_CACHE_KEY, JSON.stringify(me.data.organization));
       }
     } catch {}
     return data.user;
@@ -70,6 +106,8 @@ export function AuthProvider({ children }) {
       await api.post("/auth/logout");
     } catch {}
     clearToken();
+    localStorage.removeItem(USER_CACHE_KEY);
+    localStorage.removeItem(ORG_CACHE_KEY);
     setUser(false);
     setOrg(null);
     window.location.href = "/login";
