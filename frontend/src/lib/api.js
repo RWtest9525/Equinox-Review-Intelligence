@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const BASE = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 const TOKEN_KEY = "equinox_token";
 
@@ -8,12 +8,17 @@ export const api = axios.create({ baseURL: BASE });
 
 api.interceptors.request.use((cfg) => {
   const t = localStorage.getItem(TOKEN_KEY);
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  if (t && t !== "undefined" && t !== "null") cfg.headers.Authorization = `Bearer ${t}`;
   return cfg;
 });
 
 api.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    if (typeof r.data === "string" && (r.data.includes("<!DOCTYPE html") || r.data.includes("<!doctype html") || r.data.includes("<html"))) {
+      return Promise.reject(new Error("Unable to reach the backend API. Please make sure the backend server is running and REACT_APP_BACKEND_URL is properly configured."));
+    }
+    return r;
+  },
   (err) => {
     if (err.response?.status === 401 && !window.location.pathname.includes("/login")) {
       localStorage.removeItem(TOKEN_KEY);
@@ -23,9 +28,18 @@ api.interceptors.response.use(
   }
 );
 
-export const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+export const setToken = (t) => {
+  if (t && t !== "undefined" && t !== "null") {
+    localStorage.setItem(TOKEN_KEY, t);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+};
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const getToken = () => {
+  const t = localStorage.getItem(TOKEN_KEY);
+  return t && t !== "undefined" && t !== "null" ? t : null;
+};
 
 export function apiErr(e) {
   const d = e?.response?.data?.detail;

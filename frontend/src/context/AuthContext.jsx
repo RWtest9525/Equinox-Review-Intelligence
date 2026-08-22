@@ -17,8 +17,13 @@ export function AuthProvider({ children }) {
     api
       .get("/auth/me")
       .then((r) => {
-        setUser(r.data.user);
-        setOrg(r.data.organization);
+        if (r.data && typeof r.data === "object" && r.data.user) {
+          setUser(r.data.user);
+          setOrg(r.data.organization || null);
+        } else {
+          clearToken();
+          setUser(false);
+        }
       })
       .catch(() => {
         clearToken();
@@ -27,20 +32,36 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
+    const res = await api.post("/auth/login", { email, password });
+    const data = res.data;
+    if (!data || typeof data !== "object" || !data.access_token) {
+      throw new Error("Unable to authenticate. Invalid response from server.");
+    }
     setToken(data.access_token);
     setUser(data.user);
-    const me = await api.get("/auth/me");
-    setOrg(me.data.organization);
+    try {
+      const me = await api.get("/auth/me");
+      if (me.data && me.data.organization) {
+        setOrg(me.data.organization);
+      }
+    } catch {}
     return data.user;
   };
 
   const register = async (payload) => {
-    const { data } = await api.post("/auth/register", payload);
+    const res = await api.post("/auth/register", payload);
+    const data = res.data;
+    if (!data || typeof data !== "object" || !data.access_token) {
+      throw new Error("Unable to create account. Invalid response from server.");
+    }
     setToken(data.access_token);
     setUser(data.user);
-    const me = await api.get("/auth/me");
-    setOrg(me.data.organization);
+    try {
+      const me = await api.get("/auth/me");
+      if (me.data && me.data.organization) {
+        setOrg(me.data.organization);
+      }
+    } catch {}
     return data.user;
   };
 

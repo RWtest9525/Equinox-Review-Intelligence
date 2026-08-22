@@ -12,8 +12,8 @@ export default function Login() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("admin@equinox.ai");
-  const [password, setPassword] = useState("Equinox@2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,6 +36,15 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleMode = () => {
+    setMode((prev) => (prev === "login" ? "register" : "login"));
+    setError("");
+    setEmail("");
+    setPassword("");
+    setName("");
+    setOrg("");
   };
 
   return (
@@ -131,20 +140,13 @@ export default function Login() {
           <div className="mt-5 text-center text-sm text-zinc-500">
             {mode === "login" ? "New to Equinox?" : "Already have an account?"}{" "}
             <button
-              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              onClick={handleToggleMode}
               className="font-medium text-blue-400 hover:text-blue-300"
               data-testid="toggle-mode"
             >
               {mode === "login" ? "Create account" : "Sign in"}
             </button>
           </div>
-
-          {mode === "login" && (
-            <div className="mt-6 rounded-lg border border-white/[0.06] bg-[#121214] p-3 text-[11px] text-zinc-500">
-              <div className="font-medium text-zinc-400 mb-1">Demo credentials</div>
-              Super Admin — admin@equinox.ai / Equinox@2026
-            </div>
-          )}
 
           <div className="mt-8 text-center text-xs text-zinc-500">
             Build By <span className="text-rose-500">♥️</span> From Equinox Marketing Agency
